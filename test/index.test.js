@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync, writeFileSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { fixSuggestions, inspectRepo, renderMarkdown } from "../src/index.js";
+import { fixSuggestions, inspectRepo, parseCliArgs, renderMarkdown } from "../src/index.js";
 
 test("scores a launchable repository and reports secrets", () => {
   const dir = mkdtempSync(path.join(tmpdir(), "launch-doctor-"));
@@ -30,4 +30,11 @@ test("skips noisy lockfiles during secret scanning", () => {
   writeFileSync(path.join(dir, "package-lock.json"), "token = sk-thislookssecretbutfake123456");
   const report = inspectRepo(dir);
   assert.equal(report.findings.length, 0);
+});
+
+test("validates fail-under CLI option", () => {
+  assert.deepEqual(parseCliArgs(["examples/sample-repo", "--fail-under", "80"]).failUnder, 80);
+  assert.deepEqual(parseCliArgs(["--fail-under", "80"]).target, ".");
+  assert.throws(() => parseCliArgs(["--fail-under"]), /requires a value/);
+  assert.throws(() => parseCliArgs(["--fail-under", "nope"]), /0 to 100/);
 });

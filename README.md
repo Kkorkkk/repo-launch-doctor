@@ -30,3 +30,12 @@ This is a fast preflight, not a full security scanner. It skips common lockfiles
 ```bash
 node src/index.js examples/sample-repo
 ```
+
+Example output:
+
+```md
+# Repo Launch Doctor Report
+Score: 50/100
+- [x] README - README.md
+- [ ] ci - .github/workflows/
+```

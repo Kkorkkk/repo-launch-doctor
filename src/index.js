@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { readdirSync, readFileSync, statSync, existsSync } from "node:fs";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 const required = [
   ["README.md", "README"],
@@ -122,12 +123,46 @@ export function renderMarkdown(report, options = {}) {
   return lines.join("\n") + "\n";
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
-  const target = process.argv[2] || ".";
-  const json = process.argv.includes("--json");
-  const includeFixSuggestions = process.argv.includes("--fix-suggestions");
-  const failUnderIndex = process.argv.indexOf("--fail-under");
-  const failUnder = failUnderIndex > -1 ? Number(process.argv[failUnderIndex + 1]) : 0;
+function flagValue(args, flag) {
+  const index = args.indexOf(flag);
+  if (index === -1) return null;
+  const value = args[index + 1];
+  if (!value || value.startsWith("--")) throw new Error(`${flag} requires a value.`);
+  return value;
+}
+
+export function parseCliArgs(args) {
+  let target = ".";
+  for (let index = 0; index < args.length; index++) {
+    if (args[index] === "--fail-under") {
+      index++;
+    } else if (!args[index].startsWith("--")) {
+      target = args[index];
+      break;
+    }
+  }
+  const failUnderRaw = flagValue(args, "--fail-under");
+  const failUnder = failUnderRaw == null ? 0 : Number(failUnderRaw);
+  if (!Number.isFinite(failUnder) || failUnder < 0 || failUnder > 100) {
+    throw new Error("--fail-under must be a number from 0 to 100.");
+  }
+  return {
+    target,
+    json: args.includes("--json"),
+    includeFixSuggestions: args.includes("--fix-suggestions"),
+    failUnder
+  };
+}
+
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  let options;
+  try {
+    options = parseCliArgs(process.argv.slice(2));
+  } catch (error) {
+    console.error(`repo-launch-doctor: ${error.message}`);
+    process.exit(1);
+  }
+  const { target, json, includeFixSuggestions, failUnder } = options;
   const report = inspectRepo(target);
   const output = includeFixSuggestions ? { ...report, fixSuggestions: fixSuggestions(report) } : report;
   console.log(json ? JSON.stringify(output, null, 2) : renderMarkdown(report, { fixSuggestions: includeFixSuggestions }));
