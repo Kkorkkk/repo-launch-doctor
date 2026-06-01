@@ -1,0 +1,38 @@
+{
+  "name": "repo-launch-doctor",
+  "version": "0.1.0",
+  "description": "Preflight checks for repositories before publishing them on GitHub.",
+  "type": "module",
+  "bin": {
+    "repo-launch-doctor": "./src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node --test"
+  },
+  "keywords": [
+    "cli",
+    "developer-tools",
+    "ai",
+    "github"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "author": "Kkorkkk",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Kkorkkk/repo-launch-doctor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Kkorkkk/repo-launch-doctor/issues"
+  },
+  "homepage": "https://github.com/Kkorkkk/repo-launch-doctor#readme",
+  "files": [
+    "src",
+    "examples",
+    "README.md",
+    "LICENSE"
+  ]
+}
