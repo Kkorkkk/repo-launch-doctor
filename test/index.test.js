@@ -12,7 +12,7 @@ test("scores a launchable repository and reports secrets", () => {
   writeFileSync(path.join(dir, "package.json"), "{}");
   writeFileSync(path.join(dir, ".gitignore"), "node_modules");
   mkdirSync(path.join(dir, "examples"));
-  writeFileSync(path.join(dir, "examples", "demo.txt"), "apiKey = sk-thislookssecretbutfake123456");
+  writeFileSync(path.join(dir, "examples", "demo.txt"), "apiKey = sk-abcdefghijklmnopqrstuvwxyz1234567890");
   const report = inspectRepo(dir);
   assert.equal(report.checks.find((check) => check.id === "README").ok, true);
   assert.equal(report.findings.length >= 1, true);
@@ -37,4 +37,15 @@ test("validates fail-under CLI option", () => {
   assert.deepEqual(parseCliArgs(["--fail-under", "80"]).target, ".");
   assert.throws(() => parseCliArgs(["--fail-under"]), /requires a value/);
   assert.throws(() => parseCliArgs(["--fail-under", "nope"]), /0 to 100/);
+});
+
+test("rejects missing paths and avoids short secret false positives", () => {
+  assert.throws(() => inspectRepo(path.join(tmpdir(), "missing-launch-doctor-target")), /does not exist/);
+  const dir = mkdtempSync(path.join(tmpdir(), "launch-doctor-short-secret-"));
+  writeFileSync(path.join(dir, "README.md"), "# Demo");
+  writeFileSync(path.join(dir, "LICENSE"), "MIT");
+  writeFileSync(path.join(dir, "package.json"), "{}");
+  writeFileSync(path.join(dir, ".gitignore"), "node_modules");
+  writeFileSync(path.join(dir, "code.js"), "const sk_value = 'sk-not-a-real-secret';");
+  assert.equal(inspectRepo(dir).findings.length, 0);
 });

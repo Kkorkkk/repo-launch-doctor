@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readdirSync, readFileSync, statSync, existsSync } from "node:fs";
+import { lstatSync, readdirSync, readFileSync, realpathSync, statSync, existsSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -11,29 +11,53 @@ const required = [
 ];
 
 const secretPatterns = [
-  /api[_-]?key\s*[:=]\s*['"]?[A-Za-z0-9_\-]{18,}/i,
-  /secret\s*[:=]\s*['"]?[A-Za-z0-9_\-]{18,}/i,
-  /token\s*[:=]\s*['"]?[A-Za-z0-9_\-]{18,}/i,
-  /xai-[A-Za-z0-9_\-]{20,}/i,
-  /sk-[A-Za-z0-9_\-]{20,}/i
+  /\b(?:api[_-]?key|secret|token)\s*[:=]\s*['"]?[A-Za-z0-9_\-]{24,}/i,
+  /\bxai-[A-Za-z0-9_\-]{28,}\b/i,
+  /\bsk-(?:proj-)?[A-Za-z0-9_\-]{28,}\b/i
 ];
 
 const noisyFiles = new Set(["package-lock.json", "pnpm-lock.yaml", "yarn.lock"]);
 const binaryLike = /\.(png|jpe?g|gif|webp|ico|pdf|zip|gz|mp4|mov|woff2?|ttf)$/i;
 
-function walk(root, limit = 300) {
+function walk(root, limit = 300, maxDepth = 8) {
   const files = [];
   const ignored = new Set(["node_modules", ".git", "dist", "coverage"]);
+  const visited = new Set();
   let truncated = false;
-  function visit(dir) {
+  function visit(dir, depth = 0) {
     if (files.length >= limit) {
       truncated = true;
       return;
     }
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (depth > maxDepth) {
+      truncated = true;
+      return;
+    }
+    let real;
+    try {
+      real = realpathSync(dir);
+      if (visited.has(real)) return;
+      visited.add(real);
+    } catch {
+      return;
+    }
+    let entries;
+    try {
+      entries = readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
       if (ignored.has(entry.name)) continue;
       const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) visit(full);
+      let stat;
+      try {
+        stat = lstatSync(full);
+      } catch {
+        continue;
+      }
+      if (stat.isSymbolicLink()) continue;
+      if (stat.isDirectory()) visit(full, depth + 1);
       else files.push(full);
       if (files.length >= limit) {
         truncated = true;
@@ -52,7 +76,8 @@ function shouldScanForSecrets(file) {
 
 export function inspectRepo(root) {
   const abs = path.resolve(root);
-  const scan = existsSync(abs) ? walk(abs) : { files: [], truncated: false };
+  if (!existsSync(abs)) throw new Error(`Target does not exist: ${abs}`);
+  const scan = walk(abs);
   const files = scan.files;
   const rels = files.map((file) => path.relative(abs, file));
   const checks = [];
@@ -67,7 +92,12 @@ export function inspectRepo(root) {
   const findings = [];
   for (const file of files) {
     if (!shouldScanForSecrets(file)) continue;
-    let size = statSync(file).size;
+    let size;
+    try {
+      size = statSync(file).size;
+    } catch {
+      continue;
+    }
     if (size > 300_000) continue;
     let text = "";
     try {
@@ -166,5 +196,5 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const report = inspectRepo(target);
   const output = includeFixSuggestions ? { ...report, fixSuggestions: fixSuggestions(report) } : report;
   console.log(json ? JSON.stringify(output, null, 2) : renderMarkdown(report, { fixSuggestions: includeFixSuggestions }));
-  process.exit(report.findings.length || report.score < failUnder ? 2 : 0);
+  process.exit(report.findings.length > 0 || report.score < failUnder ? 2 : 0);
 }

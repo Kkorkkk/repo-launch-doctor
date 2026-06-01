@@ -24,7 +24,7 @@
   "author": "Kkorkkk",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Kkorkkk/repo-launch-doctor.git"
+    "url": "git+https://github.com/Kkorkkk/repo-launch-doctor.git"
   },
   "bugs": {
     "url": "https://github.com/Kkorkkk/repo-launch-doctor/issues"
@@ -35,5 +35,7 @@
     "examples",
     "README.md",
     "LICENSE"
-  ]
+  ],
+  "main": "./src/index.js",
+  "exports": "./src/index.js"
 }
