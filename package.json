@@ -1,7 +1,7 @@
 {
   "name": "repo-launch-doctor",
   "version": "0.1.0",
-  "description": "Preflight checks for repositories before publishing them on GitHub.",
+  "description": "Preflight checks and fix suggestions for repositories before publishing them on GitHub.",
   "type": "module",
   "bin": {
     "repo-launch-doctor": "./src/index.js"
@@ -13,8 +13,9 @@
   "keywords": [
     "cli",
     "developer-tools",
-    "ai",
-    "github"
+    "github",
+    "quality",
+    "release"
   ],
   "license": "MIT",
   "engines": {
