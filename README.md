@@ -2,6 +2,12 @@
 
 [![CI](https://github.com/Kkorkkk/repo-launch-doctor/actions/workflows/ci.yml/badge.svg)](https://github.com/Kkorkkk/repo-launch-doctor/actions/workflows/ci.yml)
 
+## Overview / 项目说明
+
+English: Repo Launch Doctor is a local pre-publish auditor for GitHub repositories. It checks whether a project has the launch basics that visitors expect: README quality, license, package metadata, CI, tests, examples, screenshots or demo notes, and conservative secret-risk signals.
+
+中文：Repo Launch Doctor 是一个用于 GitHub 仓库发布前自检的本地 CLI。它会检查项目是否具备首页访客最关心的基础项，包括 README、许可证、包元数据、CI、测试、示例、截图或演示说明，以及保守的敏感信息风险提示。
+
 Run a practical GitHub launch check before you publish a repository.
 
 ## Install
